@@ -12,8 +12,8 @@ class AppConfig {
       '1:454223343843:android:3f82b173b4fbf953c695d6';
 
   // ─── Google Sign In ──────────────────────────────────────────
-  // Isi dengan Web Client ID dari Google Cloud Console
-  // Project: mapia-9b430 → APIs & Services → Credentials → OAuth 2.0
+  /// Web Client ID dari Google Cloud Console
+  /// Project: mapia-9b430 → APIs & Services → Credentials → OAuth 2.0 Client IDs
   static const String googleWebClientId =
-      'https://gxwvurwxoexpfnmchhvi.supabase.co/auth/v1/callback';
+      '805501470648-i988fgtm1ebqj2k1589vq1mgr5khpuis.apps.googleusercontent.com';
 }

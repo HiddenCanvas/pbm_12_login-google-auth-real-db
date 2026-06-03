@@ -38,6 +38,12 @@ class NotificationService {
     required String body,
   }) async {
     try {
+      // Validasi target user ID
+      if (targetUserId.trim().isEmpty) {
+        debugPrint('[Notif] Error: Target user ID kosong');
+        return false;
+      }
+
       // Ambil token target
       final tokenData = await _supabase
           .from('fcm_tokens')
@@ -46,11 +52,16 @@ class NotificationService {
           .maybeSingle();
 
       if (tokenData == null) {
-        debugPrint('[Notif] Target user tidak punya token');
+        debugPrint('[Notif] Error: Target user tidak punya token');
         return false;
       }
 
       final targetToken = tokenData['token'] as String;
+      if (targetToken.trim().isEmpty) {
+        debugPrint('[Notif] Error: Token target kosong');
+        return false;
+      }
+
       final senderName =
           _supabase.auth.currentUser?.userMetadata?['full_name'] ?? 'Seseorang';
 
@@ -67,6 +78,9 @@ class NotificationService {
 
       debugPrint('[Notif] Berhasil dikirim. Response: ${result.data}');
       return true;
+    } on FunctionException catch (e) {
+      debugPrint('[Notif] Function Error: $e');
+      return false;
     } catch (e) {
       debugPrint('[Notif] Error: $e');
       return false;
