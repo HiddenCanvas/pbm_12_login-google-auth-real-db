@@ -90,7 +90,7 @@ class FCMService {
       'user_id': userId,
       'token': token,
       'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'user_id');
+    }, onConflict: 'token');
 
     debugPrint('[FCM] Token saved for user: $userId');
   }
@@ -98,11 +98,12 @@ class FCMService {
   /// Hapus token saat logout
   static Future<void> deleteToken() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId != null) {
+    final token = await _messaging.getToken();
+    if (userId != null && token != null) {
       await Supabase.instance.client
           .from('fcm_tokens')
           .delete()
-          .eq('user_id', userId);
+          .eq('token', token);
     }
     await _messaging.deleteToken();
   }

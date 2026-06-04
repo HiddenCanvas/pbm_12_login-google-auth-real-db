@@ -21,7 +21,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   );
 
   List<Map<String, dynamic>> _users = [];
-  String? _selectedUserId;
+  final Set<String> _selectedUserIds = {};
   bool _isSending = false;
   bool _isLoadingUsers = true;
   String? _myFCMToken;
@@ -57,7 +57,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _sendNotification() async {
-    if (_selectedUserId == null) {
+    if (_selectedUserIds.isEmpty) {
       _showSnack('Pilih dulu penerima notifikasi!', isError: true);
       return;
     }
@@ -70,8 +70,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
 
     setState(() => _isSending = true);
-    final success = await NotificationService.sendNotificationToUser(
-      targetUserId: _selectedUserId!,
+    final success = await NotificationService.sendNotificationToUsers(
+      targetUserIds: _selectedUserIds.toList(),
       title: title,
       body: body,
     );
@@ -203,10 +203,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
               children: _users.map((user) {
                 final userId = user['user_id'] as String;
                 final shortId = userId.substring(0, 12);
-                final isSelected = _selectedUserId == userId;
+                final isSelected = _selectedUserIds.contains(userId);
 
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedUserId = userId),
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedUserIds.remove(userId);
+                      } else {
+                        _selectedUserIds.add(userId);
+                      }
+                    });
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.only(bottom: 8),
@@ -244,7 +252,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Perangkat / User',
+                                user['display'] as String? ?? 'Perangkat / User',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: isSelected

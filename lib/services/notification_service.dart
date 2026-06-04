@@ -11,54 +11,59 @@ class NotificationService {
   static Future<List<Map<String, dynamic>>> getOtherUsersWithTokens() async {
     final currentUserId = _supabase.auth.currentUser?.id;
 
-    // Join fcm_tokens dengan profiles (jika ada) atau pakai auth.users metadata
     final response = await _supabase
         .from('fcm_tokens')
         .select('user_id, token, updated_at')
         .neq('user_id', currentUserId ?? '');
 
-    // Ambil nama dari metadata
-    final List<Map<String, dynamic>> users = [];
+    // Kelompokkan token berdasarkan user_id
+    final Map<String, List<String>> userTokens = {};
     for (final row in response as List) {
-      users.add({
-        'user_id': row['user_id'],
-        'token': row['token'],
-        'display': 'User ${(row['user_id'] as String).substring(0, 8)}...',
-      });
+      final uid = row['user_id'] as String;
+      final token = row['token'] as String;
+      if (!userTokens.containsKey(uid)) {
+        userTokens[uid] = [];
+      }
+      userTokens[uid]!.add(token);
     }
+
+    final List<Map<String, dynamic>> users = [];
+    userTokens.forEach((uid, tokens) {
+      users.add({
+        'user_id': uid,
+        'tokens': tokens,
+        'display': 'User ${uid.substring(0, 8)} (${tokens.length} Perangkat)',
+      });
+    });
 
     return users;
   }
 
-  /// Kirim notifikasi ke SATU user tertentu (bukan yang lain)
-  /// Inilah inti tugas: Perangkat A → B, tapi TIDAK ke C
-  static Future<bool> sendNotificationToUser({
-    required String targetUserId,
+  /// Kirim notifikasi ke beberapa target user sekaligus
+  static Future<bool> sendNotificationToUsers({
+    required List<String> targetUserIds,
     required String title,
     required String body,
   }) async {
     try {
-      // Validasi target user ID
-      if (targetUserId.trim().isEmpty) {
-        debugPrint('[Notif] Error: Target user ID kosong');
+      if (targetUserIds.isEmpty) {
+        debugPrint('[Notif] Error: Target user list kosong');
         return false;
       }
 
-      // Ambil token target
-      final tokenData = await _supabase
+      // Ambil semua token untuk semua target user
+      final response = await _supabase
           .from('fcm_tokens')
           .select('token')
-          .eq('user_id', targetUserId)
-          .maybeSingle();
+          .inFilter('user_id', targetUserIds);
 
-      if (tokenData == null) {
-        debugPrint('[Notif] Error: Target user tidak punya token');
-        return false;
-      }
+      final List<String> targetTokens = (response as List)
+          .map((row) => row['token'] as String)
+          .where((t) => t.trim().isNotEmpty)
+          .toList();
 
-      final targetToken = tokenData['token'] as String;
-      if (targetToken.trim().isEmpty) {
-        debugPrint('[Notif] Error: Token target kosong');
+      if (targetTokens.isEmpty) {
+        debugPrint('[Notif] Error: Target user tidak memiliki token aktif');
         return false;
       }
 
@@ -69,14 +74,14 @@ class NotificationService {
       final result = await _supabase.functions.invoke(
         'send-notification',
         body: {
-          'targetToken': targetToken,
+          'targetTokens': targetTokens,
           'title': title,
           'body': body,
           'senderName': senderName,
         },
       );
 
-      debugPrint('[Notif] Berhasil dikirim. Response: ${result.data}');
+      debugPrint('[Notif] Berhasil dikirim ke ${targetTokens.length} perangkat. Response: ${result.data}');
       return true;
     } on FunctionException catch (e) {
       debugPrint('[Notif] Function Error: $e');
@@ -85,5 +90,18 @@ class NotificationService {
       debugPrint('[Notif] Error: $e');
       return false;
     }
+  }
+
+  /// Kirim notifikasi ke SATU user tertentu (tetap dipertahankan untuk backward compatibility)
+  static Future<bool> sendNotificationToUser({
+    required String targetUserId,
+    required String title,
+    required String body,
+  }) async {
+    return sendNotificationToUsers(
+      targetUserIds: [targetUserId],
+      title: title,
+      body: body,
+    );
   }
 }

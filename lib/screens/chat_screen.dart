@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/message_model.dart';
 import '../services/auth_service.dart';
 import '../services/chat_service.dart';
+import '../services/presence_service.dart';
 
 /// Layar chat realtime dengan streaming messages
 class ChatScreen extends StatefulWidget {
@@ -84,7 +85,22 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Chat'),
+            ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+              valueListenable: PresenceService.onlineUsers,
+              builder: (context, onlineMap, _) {
+                final count = onlineMap.length;
+                return Text(
+                  '$count perangkat online',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                );
+              },
+            ),
+          ],
+        ),
         backgroundColor: const Color(0xFF4F46E5),
         elevation: 0,
       ),
@@ -205,17 +221,41 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           if (!isCurrentUser) ...[
             // Avatar placeholder untuk pesan orang lain
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.grey[300],
-              child: Text(
-                message.senderName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.grey[300],
+                  child: Text(
+                    message.senderName.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
+                ValueListenableBuilder<Map<String, Map<String, dynamic>>>(
+                  valueListenable: PresenceService.onlineUsers,
+                  builder: (context, onlineMap, _) {
+                    final isOnline = onlineMap.containsKey(message.userId);
+                    if (!isOnline) return const SizedBox.shrink();
+                    return Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(width: 8),
           ],

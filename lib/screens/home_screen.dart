@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_service.dart';
+import '../services/presence_service.dart';
 import 'chat_screen.dart';
 import 'notification_screen.dart';
 
@@ -20,11 +21,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initFCM();
+    _initServices();
   }
 
-  Future<void> _initFCM() async {
+  Future<void> _initServices() async {
     await FCMService.initialize();
+    PresenceService.initialize();
     setState(() => _fcmInitialized = true);
   }
 
@@ -52,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (confirm == true) {
+      PresenceService.dispose();
       await FCMService.deleteToken();
       await AuthService.signOut();
     }

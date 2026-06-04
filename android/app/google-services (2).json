@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "454223343843",
+    "project_id": "mapia-9b430",
+    "storage_bucket": "mapia-9b430.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454223343843:android:3f82b173b4fbf953c695d6",
+        "android_client_info": {
+          "package_name": "com.example.pbmtes"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAe4YYS_6-zCYgUruigB3TgjVepVxLHfC4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
